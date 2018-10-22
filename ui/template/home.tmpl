@@ -1,0 +1,27 @@
+{{template "base/head" .}}
+<div class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <!-- TODO: Add GoHub icon -->
+  </div>
+
+  <div class="navbar-end">
+    <div class="navbar-item">
+      <div class="buttons">
+        <div class="button is-primary">
+          <a href="http://{{.Domain}}/user/register" aria-label="register">
+            <strong>Sign Up</strong>
+          </a>
+        </div>
+
+        <div class="button is-light">
+          <a href="http://{{.Domain}}/user/login" aria-label="login">
+            <strong>Login</strong>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TODO: Add tiles here -->
+{{template "base/footer" .}}

@@ -5,7 +5,7 @@ import (
 )
 
 var webCmd = &cobra.Command{
-	Use: "web",
+	Use:   "ui",
 	Short: "Start GoHub service with Web UI",
 	Long: `Provides a Web UI which implements session management, cookies,
 and is highly configurable.`,

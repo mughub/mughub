@@ -1,5 +1,7 @@
 package main
 
-func main() {
+import "gohub/cmd"
 
+func main() {
+	cmd.Execute()
 }

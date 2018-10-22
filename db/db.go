@@ -1,10 +1,18 @@
 // Package db contains manages for GoHub's data
 package db
 
+//go:generate mockgen -destination=./mock/mock.go gohub/db Interface
+
 import (
 	"context"
+	"github.com/graphql-go/graphql"
 	"github.com/spf13/viper"
 )
+
+func init() {
+	viper.SetDefault("database.name", "sqlite")
+	viper.SetDefault("database.dsn", "gohub.db")
+}
 
 var dbInterface Interface
 
@@ -17,17 +25,24 @@ func RegisterDB(i Interface) { dbInterface = i }
 type Interface interface {
 	// Init initializes the database implementation.
 	// Each implementation should rely on spf13/viper for config.
-	Init(v *viper.Viper) error
+	Init(schema graphql.Schema, cfg *viper.Viper) error
 
-	// Query
-	Query(ctx context.Context) error
-
-	// Mutate
-	Mutate(ctx context.Context) error
+	// Do executes the provided GraphQL request
+	Do(ctx context.Context, req string, vars map[string]interface{}) *graphql.Result
 }
 
-func Init(v *viper.Viper) error { return dbInterface.Init(v) }
+type ErrUnknownDB struct {
+	name string
+}
 
-func Query(ctx context.Context) error { return dbInterface.Query(ctx) }
+func (e ErrUnknownDB) Error() string {
+	return "db: unsupported database - " + e.name
+}
 
-func Mutate(ctx context.Context) error { return dbInterface.Mutate(ctx) }
+func Init(schema graphql.Schema, cfg *viper.Viper) error {
+	return dbInterface.Init(schema, cfg)
+}
+
+func Do(ctx context.Context, req string, vars map[string]interface{}) *graphql.Result {
+	return dbInterface.Do(ctx, req, vars)
+}

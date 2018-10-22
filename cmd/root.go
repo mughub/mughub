@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gohub/bare"
+	"gohub/cmd/util"
 	"gohub/db"
 	"os"
 )
@@ -14,7 +16,7 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use: "gohub",
+	Use:   "gohub",
 	Short: "GoHub is self-hosted Git service",
 	Long: `GoHub is mainly a rewrite of Gogs, another sel-hosted Git service.
 The reason for the rewrite is to bring a broad implementation to light.`,
@@ -25,20 +27,38 @@ The reason for the rewrite is to bring a broad implementation to light.`,
 		}
 
 		switch dbCfg.GetString("name") {
-		case "cockroachdb":
-			db.RegisterDB(&db.CockroachDB{})
+		case "postgress", "mysql", "sqlite3":
+			db.RegisterDB(&db.SQLDB{})
 		case "dgraph":
 			db.RegisterDB(&db.DgraphDB{})
-		case "sqlite":
-			db.RegisterDB(&db.SQLiteDB{})
 		default:
 			return errors.New("unknown database name")
 		}
 
 		return db.Init(dbCfg)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Implement root command which starts GoHub as barebones Git service i.e. its just a remote server
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Retrieve git endpoints from viper
+		vEndpoints := viper.Get("git.endpoints")
+		if vEndpoints == nil {
+			return errors.New("gohub: at minimum one endpoint must be set")
+		}
+		ends := vEndpoints.([]map[string]interface{})
+
+		// Loop over endpoints and pass their config to the bare package
+		endpoints := make(map[bare.Endpoint]bare.Configer)
+		for _, e := range ends {
+			cfg := viper.New()
+			for key, val := range e {
+				cfg.Set(key, val)
+			}
+
+			endpoint, config := bare.NewEndpoint(cfg)
+			endpoints[endpoint] = config
+		}
+
+		// Start endpoints and wait for any errors
+		return util.StartEndpoints(endpoints)
 	},
 }
 
