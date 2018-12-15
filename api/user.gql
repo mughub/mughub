@@ -1,0 +1,5 @@
+type User implements abs.Actor,
+            abs.Node,
+            abs.RegistryPackageOwner,
+            abs.RegistryPackageSearch,
+            repo.RepositoryOwner {}
