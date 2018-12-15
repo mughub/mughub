@@ -1,0 +1,48 @@
+"An object with an ID."
+interface Node {
+  "ID of the object."
+  id: ID!
+}
+
+"Represents an object which can take actions on GoHub. Typically a User or Bot."
+interface Actor {
+  "A URL pointing to the actor's public avatar."
+  avatarUrl(
+    "The size of the resulting square image."
+    size: Int!
+    ): URI!
+
+  "The username of the actor."
+  login(): String!
+
+  "The HTTP path for this actor."
+  resourcePath(): URI!
+
+  "The HTTP URL for this actor."
+  url: URI!
+}
+
+"An object that can have users assigned to it."
+interface Assignable {}
+
+"The possible states of a subscription."
+enum SubscriptionState {
+  "The User if never notified."
+  IGNORED
+
+  "The User is notified of all conversations."
+  SUBSCRIBED
+
+  "The User is only notified when participating or @mentioned."
+  UNSUBSCRIBED
+}
+
+interface Subscribable {
+  id: ID!
+
+  "Check if the viewer is able to change their subscription status for the repository."
+  viewerCanSubscribe: Boolean!
+
+  "Identifies if the viewer if watching, not watching, or ignoring the subscribe entity."
+  viewerSubscription: SubscriptionState
+}

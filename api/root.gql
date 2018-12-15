@@ -1,0 +1,127 @@
+schema {
+    query: Query!,
+    mutation: Mutation!,
+}
+
+type CodeOfConduct {
+  body: String
+  key: String!
+  name: String!
+  url: sc.URI
+}
+
+type LicenseRule {
+  description: String!
+  key: String!
+  label: String!
+}
+
+type License implements abs.Node {
+  body: String!
+  conditions: [LicenseRule]!
+  description: String
+  featured: Boolean!
+  hidden: Boolean!
+  id: ID!
+  implementation: String
+  key: String!
+  limitations: [LicenseRule]!
+  name: String!
+  nickname: String
+  permissions: [LicenseRule]!
+  psuedoLicense: Boolean!
+  spdxId: String
+  url: sc.URI
+}
+
+type Query {
+
+  "Perform a search across resources."
+  search(
+    "Returns the elements in the list that come after the specified cursor."
+    after: String
+    "Returns the elements in the list that come before the specified cursor."
+    before: String
+    "Returns the first n elements from the list."
+    first: Int
+    "Returns the last n elements from the list."
+    last: Int
+    "The search string to look for."
+    query: String!
+    "The type of search items to search within."
+    type: SearchType!
+    ): SearchResultConnection!
+
+  "Look up a code of conduct by key."
+  codeOfConduct(
+    "The code of conduct's key."
+    key: String!
+    ): CodeOfConduct
+
+  "Retrieve all codes of conduct."
+  codesOfConduct: [CodeOfConduct]
+
+  "Look up an open source license by its key."
+  license(
+    "The license's downcased SPDX ID."
+    key: String!
+    ): License
+
+  "Return a list of known open source licenses."
+  licenses: [License]!
+
+  "Fetches an object given its ID."
+  node(
+    "ID of the object."
+    id: ID!
+    ): abs.Node
+
+  "Lookup nodes by a list of IDs."
+  nodes(
+    "The list of node IDs."
+    ids: [ID!]!
+    ): [abs.Node]!
+
+  "Lookup an organization by login."
+  organization(
+    "The organization's login."
+    login: String!
+    ): user.Organization
+
+  "Lookup a given repository by the owner and repository name."
+  repository(
+    "The name of a repository."
+    name: String!,
+    "The login field of a user or organization."
+    owner: String!
+    ): repo.Repository
+
+  "Lookup a repository owner (ie. either a User or an Organization) by login."
+  repositoryOwner(
+    "The username to lookup the owner by."
+    login: String!
+    ): repo.RepositoryOwner
+
+  "Lookup resource by a URL."
+  resource(
+    "The URL."
+    url: sc.URI!
+    ): UniformResourceLocatable
+
+  "Lookup a topic by name."
+  topic(
+    "The topic's name."
+    name: String!
+    ): Topic
+
+  "Lookup a user by login."
+  user(
+    "The user's login."
+    login: String!
+    ): user.User
+
+  "The currently authenticated user."
+  viewer: user.User!
+}
+
+type Mutation {}
