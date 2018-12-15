@@ -5,17 +5,17 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/mughub/dgraph"
+	"github.com/mughub/git"
+	"github.com/mughub/gqlite"
+	"github.com/mughub/http"
 	"github.com/mughub/mughub/api"
 	"github.com/mughub/mughub/bare"
-	"github.com/mughub/git"
-	"github.com/mughub/http"
-	"github.com/mughub/ssh"
-	"github.com/mughub/gohub/db"
-	"github.com/mughub/dgraph"
-	"github.com/mughub/gqlite"
+	"github.com/mughub/mughub/db"
 	"github.com/mughub/sql"
+	"github.com/mughub/ssh"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	http3 "net/http"
 	"os"
 
@@ -25,24 +25,23 @@ import (
 
 func init() {
 	// API
-	viper.SetDefault("gohub.endpoint.api.domain", "localhost")
+	viper.SetDefault("mughub.endpoint.api.domain", "localhost")
 
 	// Database
-	viper.SetDefault("gohub.database.name", "gqlite")
+	viper.SetDefault("mughub.database.name", "gqlite")
 
 	// Git Protocol
-	viper.SetDefault("gohub.endpoint.git.port", 9418)
+	viper.SetDefault("mughub.endpoint.git.port", 9418)
 
 	// HTTP(s) Protocol
-	viper.SetDefault("gohub.endpoint.http.port", 80)             // HTTP port
-	viper.SetDefault("gohub.endpoint.http.secure.port", 433)     // HTTPS port
-	viper.SetDefault("gohub.endpoint.http.secure.enabled", true) // HTTPS
-	viper.SetDefault("gohub.endpoint.http.redirect", false)      // Redirect HTTP to HTTPS
+	viper.SetDefault("mughub.endpoint.http.port", 80)             // HTTP port
+	viper.SetDefault("mughub.endpoint.http.secure.port", 433)     // HTTPS port
+	viper.SetDefault("mughub.endpoint.http.redirect", false)      // Redirect HTTP to HTTPS
 
 	// SSH Protocol
-	viper.SetDefault("gohub.endpoint.ssh.port", 22)
-	viper.SetDefault("gohub.endpoint.ssh.auth.password", true)
-	viper.SetDefault("gohub.endpoint.ssh.auth.pubkey", true)
+	viper.SetDefault("mughub.endpoint.ssh.port", 22)
+	viper.SetDefault("mughub.endpoint.ssh.auth.password", true)
+	viper.SetDefault("mughub.endpoint.ssh.auth.pubkey", true)
 }
 
 var (
@@ -68,19 +67,19 @@ func setupDB(cfg *viper.Viper) error {
 }
 
 // getEnds identifies and creates all desired endpoints
-func getEnds(cfg *viper.Viper) bare.Router {
-	if gitCfg := cfg.Sub("git"); gitCfg != nil {
+func getEnds() bare.Router {
+	if viper.GetBool("mughub.endpoint.git.enabled") {
 		e := git.NewEndpoint()
 		ends = append(ends, e)
 	}
 
-	if sshCfg := cfg.Sub("ssh"); sshCfg != nil {
+	if viper.GetBool("mughub.endpoint.ssh.enabled") {
 		e := ssh.NewEndpoint()
 		ends = append(ends, e)
 	}
 
-	if httpCfg := cfg.Sub("http"); httpCfg != nil {
-		e, r := http.NewEndpoint(httpCfg)
+	if viper.GetBool("mughub.endpoint.http.enabled") {
+		e, r := http.NewEndpoint(viper.Sub("mughub.endpoint.http"))
 		ends = append(ends, e)
 		return r
 	}
@@ -97,9 +96,9 @@ func (e *apiEndpoint) ListenAndServe(ctx context.Context) error {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "gohub",
-	Short: "GoHub is self-hosted Git service",
-	Long: `GoHub is designed to provide a highly flexible Git service. This
+	Use:   "mughub",
+	Short: "μghub is self-hosted Git service",
+	Long: `μghub is designed to provide a highly flexible Git service. This
 root command will launch GoHub as a bare bones service with Git protocol
 endpoints, a database and an API endpoint. It will NOT launch with a UI. In
 order to launch with a UI, see the web sub command.`,
@@ -108,7 +107,7 @@ order to launch with a UI, see the web sub command.`,
 			return nil
 		}
 
-		dbCfg := viper.Sub("gohub.database")
+		dbCfg := viper.Sub("mughub.database")
 		if dbCfg == nil {
 			return errors.New("missing database config")
 		}
@@ -118,18 +117,19 @@ order to launch with a UI, see the web sub command.`,
 			return err
 		}
 
-		endCfg := viper.Sub("gohub.endpoint")
+		endCfg := viper.Sub("mughub.endpoint")
 		if endCfg == nil {
 			return errors.New("missing git endpoints config")
 		}
 
-		router = getEnds(endCfg)
+		router = getEnds()
 		apiCfg := endCfg.Sub("api")
 		if apiCfg != nil {
 			if router == nil {
 				router = mux.NewRouter()
 				apiEnd := &apiEndpoint{
 					s: &http3.Server{
+						Addr: ":8080",
 						Handler: router,
 						// TODO: Set timeouts and only serve over HTTPS
 					},
@@ -162,29 +162,50 @@ func init() {
 	rootCmd.PersistentFlags().Bool("https", false, "Enable HTTPS access")
 	rootCmd.PersistentFlags().Bool("ssh", false, "Enable SSH access")
 
-	viper.BindPFlag("gohub.endpoint.api.enabled", rootCmd.PersistentFlags().Lookup("api"))
-	viper.BindPFlag("gohub.endpoint.git.enabled", rootCmd.PersistentFlags().Lookup("git"))
-	viper.BindPFlag("gohub.endpoint.http.enabled", rootCmd.PersistentFlags().Lookup("http"))
-	viper.BindPFlag("gohub.endpoint.ssh.enabled", rootCmd.PersistentFlags().Lookup("ssh"))
+	err := viper.BindPFlag("mughub.endpoint.api.enabled", rootCmd.PersistentFlags().Lookup("api"))
+	if err != nil {
+		panic(err)
+	}
+
+	err = viper.BindPFlag("mughub.endpoint.git.enabled", rootCmd.PersistentFlags().Lookup("git"))
+	if err != nil {
+		panic(err)
+	}
+
+	err = viper.BindPFlag("mughub.endpoint.http.enabled", rootCmd.PersistentFlags().Lookup("http"))
+	if err != nil {
+		panic(err)
+	}
+
+	err = viper.BindPFlag("mughub.endpoint.http.secure.enabled", rootCmd.PersistentFlags().Lookup("https"))
+	if err != nil {
+		panic(err)
+	}
+
+	err = viper.BindPFlag("mughub.endpoint.ssh.enabled", rootCmd.PersistentFlags().Lookup("ssh"))
+	if err != nil {
+		panic(err)
+	}
+
 }
 
 func initConfig() {
 	var noCfg bool
 
 	// First, try to read in pre-existing gohub.yml
-	viper.SetConfigFile("gohub.yml")
+	viper.SetConfigFile("mughub.yml")
 	if err := viper.ReadInConfig(); os.IsNotExist(err) {
 		noCfg = true
-		fmt.Println("gohub: config file, gohub.yml, doesn't exist already. one will be created later.")
+		fmt.Println("mughub: config file, gohub.yml, doesn't exist already. one will be created later.")
 	} else if err != nil {
-		fmt.Println("gohub: can't read config file:", err)
+		fmt.Println("mughub: can't read config file:", err)
 	}
 
 	// Next, merge overloaded config vals from a custom config file
 	if cfgFile != "" {
 		viper.SetConfigFile(cfgFile)
 		if err := viper.MergeInConfig(); err != nil {
-			fmt.Println("gohub: can't read custom config file:", err)
+			fmt.Println("mughub: can't read custom config file:", err)
 			os.Exit(1)
 		}
 	}
@@ -192,10 +213,10 @@ func initConfig() {
 	// Lastly, write gohub.yml if it didn't exist prior
 	if noCfg {
 		if err := viper.WriteConfig(); err != nil {
-			fmt.Println("gohub: couldn't write config to:", cfgFile, err)
+			fmt.Println("mughub: couldn't write config to:", cfgFile, err)
 			os.Exit(1)
 		} else {
-			fmt.Println("gohub: created config file, gohub.yml")
+			fmt.Println("mughub: created config file, gohub.yml")
 		}
 	}
 }

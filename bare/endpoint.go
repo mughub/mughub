@@ -36,6 +36,7 @@ type Endpoint interface {
 // If one of them returns an Error it will shutdown the others.
 func ListenAndServe(ctx context.Context, ends ...Endpoint) error {
 	errChan := make(chan error, len(ends))
+	defer close(errChan)
 	eCtx, cancel := context.WithCancel(ctx)
 
 	var wg sync.WaitGroup
@@ -56,9 +57,7 @@ func ListenAndServe(ctx context.Context, ends ...Endpoint) error {
 	cancel()
 
 	err := <-errChan
-	close(errChan)
-	for range errChan {
-	} // Drain any other errors from channel
+	for range errChan {} // Drain any other errors from channel
 
 	return err
 }
