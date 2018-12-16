@@ -1,3 +1,4 @@
+// Package bare defines types related to Git protocol endpoints.
 package bare
 
 import (
