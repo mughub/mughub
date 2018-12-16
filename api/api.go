@@ -1,4 +1,4 @@
-// Package api implements the GraphQL API for GoHub
+// Package api defines the GraphQL API for GoHub
 package api
 
 import "io"
