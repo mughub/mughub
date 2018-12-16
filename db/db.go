@@ -31,12 +31,6 @@ func (r *Result) HasErrors() bool {
 	return len(r.Errors) > 0
 }
 
-// MarshalJSON marshals a Result into a JSON format.
-func (r *Result) MarshalJSON() ([]byte, error) {
-	// TODO
-	return nil, nil
-}
-
 // Interface represents any storage provider as a GraphQL service.
 type Interface interface {
 	// Init initializes the database implementation.
