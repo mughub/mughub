@@ -1,4 +1,4 @@
-// Package db defines how GoHub's data is managed.
+// Package db defines how μgHub's data is managed.
 package db
 
 //go:generate mockgen -package=dbtest -write_package_comment=false -destination=./dbtest/mock.go github.com/mughub/mughub/db Interface

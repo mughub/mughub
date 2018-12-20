@@ -97,8 +97,8 @@ func (e *apiEndpoint) ListenAndServe(ctx context.Context) error {
 
 var rootCmd = &cobra.Command{
 	Use:   "mughub",
-	Short: "μghub is self-hosted Git service",
-	Long: `μghub is designed to provide a highly flexible Git service. This
+	Short: "μgHub is self-hosted Git service",
+	Long: `μgHub is designed to provide a highly flexible Git service. This
 root command will launch GoHub as a bare bones service with Git protocol
 endpoints, a database and an API endpoint. It will NOT launch with a UI. In
 order to launch with a UI, see the web sub command.`,
